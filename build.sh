@@ -51,15 +51,15 @@ if [ $vagrant -eq 0 ]
 			
 			# Show test results
 			echo "=====TEST RESULTS====="
-			cat ./target/test_results.txt
+			cat ./build/test_results.txt
 			echo "Tests complete..."
 			
 			# Fail build with error status 1 if tests failed (hard fail or timeout)
-			if grep --quiet FAILED ./target/test_results.txt
+			if grep --quiet FAILED ./build/test_results.txt
 				then echo "Tests failed...Failing Build"
 				exit 1
 			else
-				if grep --quiet PASSED ./target/test_results.txt
+				if grep --quiet PASSED ./build/test_results.txt
 					then 
 						echo Tests Passed
 				else
@@ -70,9 +70,14 @@ if [ $vagrant -eq 0 ]
 			fi
 	else
 		echo "[WARNING]Tests cannot be run in this environment...nothing will be built"
+		echo "Build Failed"
+		exit 1
 	fi
 else
 	echo "[WARNING]Tests cannot be run in this environment...nothing will be built"
+	echo "Build Failed"
+	exit 1
 fi
 
+echo "BUILD SUCCESS"
 exit 0

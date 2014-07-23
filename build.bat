@@ -52,24 +52,27 @@ IF %vagrant% == 0 (
 		
 		REM Show test results
 		ECHO =====TEST RESULTS=====
-		TYPE .\target\test_results.txt
+		TYPE .\build\test_results.txt
 		
 		REM Check test results
 		ECHO Tests complete...
 		GOTO :CHECK_TEST_RESULTS
 	) ELSE (
 		ECHO [WARNING]Tests cannot be run in this environment...nothing will be built
+		goto :EXIT_FAIL_BUILD
 	)
 ) ELSE (
 	ECHO [WARNING]Tests cannot be run in this environment...nothing will be built
+	goto :EXIT_FAIL_BUILD
 )
 
 :EXIT_SUCCESS
+ECHO BUILD SUCCESS
 EXIT /B 0
 
 REM Fail build with error level 1 if tests failed (hard fail or timeout)
 :CHECK_TEST_RESULTS
-FINDSTR FAILED .\target\test_results.txt > NUL 2>&1
+FINDSTR FAILED .\build\test_results.txt > NUL 2>&1
 SET failed=%errorlevel%
 IF %failed% == 0 (
 	GOTO :EXIT_FAIL_TESTS
@@ -79,7 +82,7 @@ IF %failed% == 0 (
 
 REM Fail build with error level 1 if tests failed due to timeout
 :CHECK_PASSED
-FINDSTR PASSED .\target\test_results.txt > NUL 2>&1
+FINDSTR PASSED .\build\test_results.txt > NUL 2>&1
 SET passed=%errorlevel%
 IF %passed% == 0 (
 	ECHO Tests Passed
@@ -88,6 +91,10 @@ IF %passed% == 0 (
 	ECHO Tests failed due to timeout. Consider re-running with a higher timeout in example_tests.cpp
 	GOTO :EXIT_FAIL_TESTS
 )
+
+:EXIT_FAIL_BUILD
+ECHO Build Failed
+EXIT /B 1
 
 :EXIT_FAIL_TESTS
 ECHO Tests failed...Failing Build

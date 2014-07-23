@@ -18,23 +18,27 @@
 #!/bin/bash
 
 # Run script to execute tests and store output in file
-cd /vagrant/test
+cd /vagrant/
+[ -d build ] && rm -r build
+mkdir build
+cd test
 make clean
-sh run_tests.sh > /vagrant/target/test_results.txt
+sh run_tests.sh > /vagrant/build/test_results.txt
 make clean
 
 # Check if tests failed, passed or timed out
-if grep --quiet FAILED /vagrant/target/test_results.txt
+if grep --quiet FAILED /vagrant/build/test_results.txt
 	then echo Tests Failed 
 else
-	if grep --quiet PASSED /vagrant/target/test_results.txt
+	if grep --quiet PASSED /vagrant/build/test_results.txt
 		then
-			# Copy over header files and shared library to /lib and /include in target directory
+			# Copy over header files and shared library to /lib and /include in build directory
 			echo Tests Passed
-			mkdir /vagrant/target/lib
-			mkdir /vagrant/target/include
-			cp /vagrant/lib/libc-robot-control.so /vagrant/target/lib
-			cp /vagrant/src/robot_test.h /vagrant/target/include/
+			cd /vagrant/build
+			mkdir lib
+			mkdir include
+			cp ../lib/libc-robot-control.so ./lib
+			cp ../src/robot_test.h ./include/
 	else
 		echo Tests Timed Out
 	fi

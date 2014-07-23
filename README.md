@@ -9,11 +9,11 @@ Quick Start Guide:
     
     VirtualBox: https://www.virtualbox.org/wiki/Downloads
     Vagrant: http://www.vagrantup.com/downloads.html
-    Latest stable Oracle JDK 7
-    3.0.4 or later of Maven: http://maven.apache.org/download.cgi
     
 	Windows:
 	Run build.bat
 	
 	Unix:
 	Run build.sh
+	
+	If the build is successful a build folder will created and populated with the build results

@@ -21,7 +21,6 @@ echo Starting Setup...
 yum -y install glibc
 yum -y install gcc
 yum -y install gcc-c++
-yum -y install git
 yum -y install cmake
 yum -y install unzip
 
@@ -30,16 +29,6 @@ cd /home/vagrant
 wget -O jdk-7u60-linux-x64.rpm --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/7u60-b19/jdk-7u60-linux-x64.rpm
 rpm -Uvh jdk-7u60-linux-x64.rpm
 rm jdk-7u60-linux-x64.rpm
-
-# Install Apache Maven 3.0.5
-wget http://supergsego.com/apache/maven/maven-3/3.0.5/binaries/apache-maven-3.0.5-bin.tar.gz
-gtar -xf apache-maven-3.0.5-bin.tar.gz
-rm apache-maven-3.0.5-bin.tar.gz
-mv apache-maven-3.0.5 /usr/local
-echo 'export M2_HOME=/usr/local/apache-maven-3.0.5' >> /etc/profile.d/maven.sh
-echo 'export M2=$M2_HOME/bin' >> /etc/profile.d/maven.sh
-echo 'export PATH=$M2:$PATH' >> /etc/profile.d/maven.sh
-source /etc/profile.d/maven.sh
 
 # Install GTest 1.7.0 shared library to /usr/local/lib
 wget https://googletest.googlecode.com/files/gtest-1.7.0.zip
