@@ -25,7 +25,6 @@
 #define FILE_EXT ".rpt"
 #define SCRIPTS_LOCATION "./scripts/"
 
-void ROBOT_JOIN(void);
 typedef enum {INIT, PREPARED, STARTED, FINISHED, ERROR} event;
 typedef struct {
 	char * actual_script;
@@ -33,12 +32,20 @@ typedef struct {
 } result;
 
 /*
+**
+** Send the command to start the robot (which will result in robot attempts to connect if script contains connect)
+**
+*/
+void ROBOT_JOIN(void);
+
+/*
 ** Executes the given client code against the provided robot script and
 ** returns the expected script and actual script in a result structure.
 ** Returns NULL if error occurs
+** NOTE: my_name is set here
 **
 ** Arguments:
-** file_name - the name of the script (must be located in ./scripts/ .rpt extension assumed),
+** abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt)
 ** func - function pointer (function where your client code is, NULL if none), 
 ** seconds - timeout (set <= 0 for no timeout)
 */
@@ -46,13 +53,14 @@ result * robotTest(char * file_name, void * func, int seconds);
 
 /*
 ** Establishes communication with the robot and prepares it to run a test against the given script
-** Returns the contents of the given script on success
-** Returns NULL if error occurs
+** Returns 0 on success
+** Returns -1 if error occurs
+** NOTE: my_sock will be set on success
 **
 ** Arguments:
-** file_name - the name of the script (must be located in ./scripts/ .rpt extension assumed),
+** name - the identifier of the script
 */
-char * prepareRobot(char * file_name);
+int prepareRobot(char * name);
 
 /*
 ** Opens and connects a socket to the given port
@@ -99,10 +107,9 @@ long int countBytesInFile(char * file);
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being prepared
-** script - the contents of the script being prepared
+** name - identifier for the script being prepared
 */
-int writePrepare(int sock, char * script_name, char * script);
+int writePrepare(int sock, char * name);
 
 /*
 ** Sends START command to robot using given socket file descriptor
@@ -110,9 +117,9 @@ int writePrepare(int sock, char * script_name, char * script);
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being started
+** name - identifier for the script being prepared
 */
-int writeStart(int sock, char * script_name);
+int writeStart(int sock, char * name);
 
 /*
 ** Sends ABORT command to robot using given socket file descriptor
@@ -120,9 +127,9 @@ int writeStart(int sock, char * script_name);
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being aborted
+** name - identifier for the script being prepared
 */
-int writeAbort(int sock, char * script_name);
+int writeAbort(int sock, char * name);
 
 /*
 ** Sends message using given socket file descriptor
@@ -185,6 +192,16 @@ char * readContent(char * msg);
 
 
 /*
+** Converts final message received into a results structure
+** depending on the current state (FINISHED or ERROR)
+** Returns NULL on error, results structure on success
+**
+** Arguments:
+** msg - the last message received before reaching FINISHED or ERROR state
+ */
+result * getResults(char * msg);
+
+/*
 ** Creates two threads, each with the specified start routine and argument
 ** as indicated by corresponding func and arg
 ** Returns the return value of the first thread's start routine 
@@ -197,7 +214,7 @@ char * readContent(char * msg);
 ** func2 - the start routine of the second thread (client thread)
 ** arg2 - the argument of the start routine of the second thread
 */
-char * doThreaded(void * func1, void * arg1, void * func2, void * arg2);
+result * doThreaded(void * func1, void * arg1, void * func2, void * arg2);
 
 /*
 ** Returns a newly created pthread_t * with default attributes and the given 
@@ -214,11 +231,12 @@ pthread_t * createThread(void * func, void * arg);
 ** Handles communication of robot during execution of script until
 ** an ERROR is received or the FINISHED state is reached. Returns a
 ** pointer to a result structure with the results of the robot test execution
+** Returns NULL on error
 **
 ** Arguments:
-** sock pointer - pointer to socket file descriptor for communication with the robot
+** sock - pointer to socket file descriptor for communication with the robot
 */
-char * handleControl(int * sock);
+result * handleControl(int * sock);
 
 /*
 ** Signal handler for timeout

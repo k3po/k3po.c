@@ -25,6 +25,9 @@ extern "C" {
     #include <unistd.h>
 }
 
+const char * DIR = (char *)"scripts";
+const char * SCRIPT_EXT = (char *)".rpt";
+
 void echo_test();
 void alt_echo_test();
 void server_echo_test();
@@ -32,31 +35,59 @@ void server_alt_echo_test();
 int accept(int sock, in_port_t port);
 int socket_bind_and_listen(in_port_t port);
 int socket_connect(in_port_t port);
+char * ABS_PATH(char * script_name);
 
 TEST(Client, EchoTest){
 	/*	Arguments: 
-	**	scriptName (located in ./scripts/, .rpt extension assumed), 
+    **  abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt),
 	**	functionPointer (function where your client code is, NULL if none), 
 	**	functionPointer (function to any cleanup code you need to run after the client code, NULL if none) 
 	**	timeout (in seconds, set <= 0 for no timeout) 
 	*/
-	ROBOT_TEST("serverEcho", echo_test, NULL, 10);
+	char * script_path = ABS_PATH((char * )"serverEcho");
+	ROBOT_TEST(script_path, echo_test, NULL, 10);
+	free(script_path);
 }
 
 TEST(Client, AltEchoTest){
-	ROBOT_TEST("serverAltEcho", alt_echo_test, NULL, 10);
+	char * script_path = ABS_PATH((char * )"serverAltEcho");
+	ROBOT_TEST(script_path, alt_echo_test, NULL, 10);
+	free(script_path);
 }
 
 TEST(Server, EchoTest){
-	ROBOT_TEST("clientEcho", server_echo_test, NULL, 10);
+	char * script_path = ABS_PATH((char * )"clientEcho");
+	ROBOT_TEST(script_path, server_echo_test, NULL, 10);
+	free(script_path);
 }
 
 TEST(Server, AltEchoTest){
-	ROBOT_TEST("clientAltEcho", server_alt_echo_test, NULL, 10);
+	char * script_path = ABS_PATH((char * )"clientAltEcho");
+	ROBOT_TEST(script_path, server_alt_echo_test, NULL, 10);
+	free(script_path);
 }
 
 TEST(Script, Self){
-	ROBOT_TEST("self", NULL, NULL, 10);
+	char * script_path = ABS_PATH((char * )"self");
+	ROBOT_TEST(script_path, NULL, NULL, 10);
+	free(script_path);
+}
+
+/*
+** Append script_name to current working directory to get absolute path
+ */
+char * ABS_PATH(char * script_name){
+	char * working_directory = getcwd(NULL, 0);
+	int len = strlen(working_directory) + strlen(script_name) + strlen(DIR) + strlen(SCRIPT_EXT) + 3;
+	char * abs_path = (char * )malloc(sizeof(char) * len);
+	strcpy(abs_path, working_directory);
+	strcat(abs_path, "/");
+	strcat(abs_path, DIR);
+	strcat(abs_path, "/");
+	strcat(abs_path, script_name);
+	strcat(abs_path, SCRIPT_EXT);
+	free(working_directory);
+	return abs_path;
 }
 
 /*
@@ -68,7 +99,7 @@ void server_alt_echo_test(){
 	ASSERT_TRUE(sock != -1);
 	
 	ROBOT_JOIN();
-	
+
 	int accepted = accept(sock, 8001);
 	ASSERT_TRUE(accepted != -1);
 	char * expected_msg = (char *)"Testing...123";
@@ -218,7 +249,7 @@ int socket_connect(in_port_t port){
 		perror("socket");
 		return -1;
 	}
-	
+
 	struct sockaddr_in sockaddr;
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_port = htons(port);

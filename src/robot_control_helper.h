@@ -19,11 +19,12 @@
 #ifndef ROBOT_CONTROL_HELPER_H_
 #define ROBOT_CONTROL_HELPER_H_
 
-/*	Arguments: 
-**	scriptName (must be located in ./scripts/ .rpt extension assumed), 
-**	functionPointer (function where your client code is, NULL if none), 
-**	functionPointer (function to any clean-up code you need to run after the client code, NULL if none) 
-**	timeout (in seconds, set <= 0 for no timeout) 
+/*
+**  Arguments:
+**	W (absolute path of the script e.g. /home/user/../script_name.rpt),
+**	X (function where your client code is, NULL if none),
+**	Y (function to any clean-up code you need to run after the client code, NULL if none)
+**	Z (in seconds, set <= 0 for no timeout)
 */
 #define ROBOT_TEST(W, X, Y, Z) robotTestWrapper((char *)W, (void *)X, (void *)Y, (int)Z)
 
@@ -35,12 +36,12 @@
 **  NOTE: remember to start the robot before executing any tests
 **
 **  Arguments: 
-**	scriptName (must be located in ./scripts/ .rpt extension assumed), 
+**	abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt),
 **	functionPointer (function where your client code is, NULL if none), 
 **	functionPointer (function to any clean-up code you need to run after the client code, NULL if none) 
 **	timeout (in seconds, set <= 0 for no timeout) 
 */
-void robotTestWrapper(char * script, void * function, void * cleanup, int timeout);
+void robotTestWrapper(char * abs_path, void * function, void * cleanup, int timeout);
 
 #endif
 

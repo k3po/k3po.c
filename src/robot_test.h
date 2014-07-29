@@ -24,11 +24,12 @@ typedef struct {
 	char * expected_script;
 } result;
 
-/*	Arguments: 
-**	scriptName (must be located in ./scripts/ .rpt extension assumed), 
-**	functionPointer (function where your client code is, NULL if none), 
-**	functionPointer (function to any clean-up code you need to run after the client code, NULL if none) 
-**	timeout (in seconds, set <= 0 for no timeout) 
+/*
+**  Arguments:
+**	W (absolute path of the script e.g. /home/user/../script_name.rpt),
+**	X (function where your client code is, NULL if none),
+**	Y (function to any clean-up code you need to run after the client code, NULL if none)
+**	Z (in seconds, set <= 0 for no timeout)
 */
 #define ROBOT_TEST(W, X, Y, Z) robotTestWrapper((char *)W, (void *)X, (void *)Y, (int)Z)
 
@@ -44,13 +45,14 @@ extern "C" {
 	** Executes the given client code against the provided robot script and
 	** returns the expected script and actual script in a result structure.
 	** Returns NULL if error occurs
+	** NOTE: my_name is set here
 	**
 	** Arguments:
-	** file_name - the name of the script (must be located in ./scripts/ .rpt extension assumed),
-	** func - function pointer (function where your client code is, NULL if none), 
+	** abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt),
+	** func - function pointer function where your client code is, NULL if none),
 	** seconds - timeout (set <= 0 for no timeout)
 	*/
-	result * robotTest(char * file_name, void * func, int seconds);
+	result * robotTest(char * abs_path, void * func, int seconds);
 }
 /*	
 **  This provides a c++ wrapper for executing a robot test through the Google Test testing framework
@@ -60,11 +62,11 @@ extern "C" {
 **  NOTE: remember to start the robot before executing any tests
 **
 **  Arguments: 
-**	scriptName (must be located in ./scripts/ .rpt extension assumed), 
+**	abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt),
 **	functionPointer (function where your client code is, NULL if none), 
 **	functionPointer (function to any clean-up code you need to run after the client code, NULL if none) 
 **	timeout (in seconds, set <= 0 for no timeout) 
 */
-void robotTestWrapper(char * script, void * function, void * cleanup, int timeout);
+void robotTestWrapper(char * abs_path, void * function, void * cleanup, int timeout);
 
 #endif

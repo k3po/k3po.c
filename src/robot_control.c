@@ -30,7 +30,7 @@
 
 
 int my_sock = -1;
-char * my_file_name = NULL;
+char * my_name = NULL;
 event state = INIT;
 
 /*
@@ -159,16 +159,12 @@ int createAndConnectSocket(in_port_t port){
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being prepared
-** script - the contents of the script being prepared
+** name - identifier for the script being prepared
 */
-int writePrepare(int sock, char * script_name, char * script){
-	int length = strlen(script);
-	char content_length [10] = {'\0'};
-	sprintf(content_length, "%d", length);
+int writePrepare(int sock, char * name){
 
-	int expected_size = strlen("PREPARE\n") + strlen("name:") + strlen(script_name)
-			+ strlen("\n") + strlen("content-length:") + strlen(content_length) + strlen("\n\n") + strlen(script) + 1;
+	int expected_size = strlen("PREPARE\n") + strlen("name:") + strlen(name)
+			+ strlen("\n") + strlen("\n") + 1;
 	char * prepare_str = malloc(sizeof(char) * expected_size);
 	if(prepare_str == NULL){
 		perror("malloc");
@@ -176,12 +172,9 @@ int writePrepare(int sock, char * script_name, char * script){
 	}
 	strcpy(prepare_str, "PREPARE\n");
 	strcat(prepare_str, "name:");
-	strcat(prepare_str, script_name);
+	strcat(prepare_str, name);
 	strcat(prepare_str, "\n");
-	strcat(prepare_str, "content-length:");
-	strcat(prepare_str, content_length);
-	strcat(prepare_str, "\n\n");
-	strcat(prepare_str, script);
+	strcat(prepare_str, "\n");
 
 	int sent = sendMessage(sock, prepare_str);
 	free(prepare_str);
@@ -197,10 +190,10 @@ int writePrepare(int sock, char * script_name, char * script){
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being started
+** name - identifier for the script being prepared
 */
-int writeStart(int sock, char * script_name){
-	int size = strlen("START\n") + strlen("name:") + strlen(script_name) + strlen("\n\n") + 1;
+int writeStart(int sock, char * name){
+	int size = strlen("START\n") + strlen("name:") + strlen(name) + strlen("\n") + strlen("\n") + 1;
 	char * start_str = malloc(sizeof(char) * size);
 	if(start_str == NULL){
 		perror("malloc");
@@ -208,8 +201,9 @@ int writeStart(int sock, char * script_name){
 	}
 	strcpy(start_str, "START\n");
 	strcat(start_str, "name:");
-	strcat(start_str, script_name);
-	strcat(start_str, "\n\n");
+	strcat(start_str, name);
+	strcat(start_str, "\n");
+    strcat(start_str, "\n");
 
 	int sent = sendMessage(sock, start_str);
 	free(start_str);
@@ -246,10 +240,10 @@ int sendMessage(int sock, char * msg){
 **
 ** Arguments:
 ** sock - the file descriptor for a socket for which to send the command
-** script_name - the name of the script being aborted
+** name - identifier for the script being prepared
 */
-int writeAbort(int sock, char * script_name){
-	int size = strlen("ABORT\n") + strlen("name:") + strlen(script_name) + strlen("\n\n") + 1;
+int writeAbort(int sock, char * name){
+	int size = strlen("ABORT\n") + strlen("name:") + strlen(name) + strlen("\n") + strlen("\n") + 1;
 	char * abort_str = malloc(sizeof(char) * size);
 	if(abort_str == NULL){
 		perror("malloc");
@@ -257,8 +251,9 @@ int writeAbort(int sock, char * script_name){
 	}
 	strcpy(abort_str, "ABORT\n");
 	strcat(abort_str, "name:");
-	strcat(abort_str, script_name);
-	strcat(abort_str, "\n\n");
+	strcat(abort_str, name);
+	strcat(abort_str, "\n");
+	strcat(abort_str, "\n");
 
 	int sent = sendMessage(sock, abort_str);
 	free(abort_str);
@@ -373,59 +368,57 @@ long int countBytesInFile(char * file){
 
 /*
 ** Establishes communication with the robot and prepares it to run a test against the given script
-** Returns the contents of the given script on success
-** Returns NULL if error occurs
+** Returns 0 on success
+** Returns -1 if error occurs
 ** NOTE: my_sock will be set on success
 **
 ** Arguments:
-** file_name - the name of the script (must be located in ./scripts/ .rpt extension assumed),
+** name - the identifier of the script
 */
-char * prepareRobot(char * file_name){
+int prepareRobot(char * name){
 	my_sock = createAndConnectSocket(PORT);
 	if(my_sock == -1){
-		return NULL;
+		return -1;
 	}
 	
-	char * file_str = readFileIntoStringWrapper(file_name);
-	if(file_str == NULL){
-		int closed = close(my_sock);
-		if(closed == -1){
-			perror("close");
-		}
-		return NULL;
-	}
-
-	int prepared = writePrepare(my_sock, file_name, file_str);
+	int prepared = writePrepare(my_sock, name);
 	if(prepared == -1){
-		free(file_str);
 		int closed = close(my_sock);
 		if(closed == -1){
 			perror("close");
 		}
-		return NULL;
+		return -1;
 	}
 	
 	char * msg;
-	while(state != PREPARED && state != ERROR){
+	int done = 0;
+	while(!done){
 		msg = readAndClassifyMessage(&state, my_sock);
 		if(msg == NULL){
 			int closed = close(my_sock);
 			if(closed == -1){
 				perror("close");
 			}
-			return NULL;
+			return -1;
+		}
+		if(state != PREPARED && state != ERROR){
+			free(msg);
+		}
+		else{
+			done = 1;
 		}
 	}
 	if(state == ERROR){
 		fprintf(stderr, "something went wrong during prepare robot: unexpected state error received from robot server\n%s\n", msg);
-		free(file_str);
+		free(msg);
 		int closed = close(my_sock);
 		if(closed == -1){
 			perror("close");
 		}
-		return NULL;
+		return -1;
 	}
-	return file_str;
+	free(msg);
+	return 0;
 }
 
 /*
@@ -454,25 +447,88 @@ char * readAndClassifyMessage(event * evt, int sock){
 ** Handles communication of robot during execution of script until
 ** an ERROR is received or the FINISHED state is reached. Returns a
 ** pointer to a result structure with the results of the robot test execution
+** Returns NULL on error
 **
 ** Arguments:
-** sock pointer - pointer to socket file descriptor for communication with the robot
+** sock - pointer to socket file descriptor for communication with the robot
 */
-char * handleControl(int * sock){
+result * handleControl(int * sock){
 	char * msg;
-	while(state != FINISHED && state != ERROR){
+	int done = 0;
+	while(!done){
 		msg = readAndClassifyMessage(&state, *sock);
 		if(msg == NULL){
-			free(msg);
 			return NULL;
 		}
+
+		if(state != FINISHED && state != ERROR){
+			free(msg);
+		}
+		else{
+			done = 1;
+		}
 	}
-	char * content = readContent(msg);
+	result * res = getResults(msg);
 	free(msg);
-	if(content == NULL){
+	return res;
+}
+
+/*
+** Converts final message received into a results structure
+** depending on the current state (FINISHED or ERROR)
+** Returns NULL on error, results structure on success
+**
+** Arguments:
+** msg - the last message received before reaching FINISHED or ERROR state
+ */
+result * getResults(char * msg){
+	result * res = malloc(sizeof(result));
+	if(res == NULL){
+		perror("malloc");
 		return NULL;
 	}
-	return content;
+
+	char * content = readContent(msg);
+	if(content == NULL){
+		free(res);
+		return NULL;
+	}
+
+	if(state == FINISHED){
+		int len = strlen(content);
+		char * half = strstr(content, "content-length:");
+		if(half == NULL){
+			perror("strstr");
+			return NULL;
+		}
+		int remain = strlen(half);
+
+		char * expected_script = malloc(sizeof(char) * (len - remain) + 1);
+		if(expected_script == NULL){
+			perror("malloc");
+			return NULL;
+		}
+		memcpy(expected_script, content, len - remain);
+		*(expected_script + len - remain) = '\0';
+
+		char * actual_script = readContent(half);
+
+		free(content);
+		if(actual_script == NULL){
+			actual_script = "";
+		}
+		res->actual_script = actual_script;
+		res->expected_script = expected_script;
+	}
+	else if(state == ERROR){
+		res->actual_script = content;
+		res->expected_script = "";
+	}
+	else{
+		fprintf(stderr, "Cannot get results from current state: Must be ERROR or FINISHED\n");
+		return NULL;
+	}
+	return res;
 }
 
 /*
@@ -482,9 +538,8 @@ char * handleControl(int * sock){
 void catch_alarm (int sig)
 {
 	printf("Test has timed out...stopping now\n");
-
 	if(state != FINISHED && state != ERROR){
-		int aborted = writeAbort(my_sock, my_file_name);
+		int aborted = writeAbort(my_sock, my_name);
 		if(aborted == -1){
 			fprintf(stderr, "Error aborting script after timeout\n");
 			exit(EXIT_FAILURE);
@@ -536,25 +591,24 @@ char * readFileIntoStringWrapper(char * file_name){
 ** Executes the given client code against the provided robot script and
 ** returns the expected script and actual script in a result structure.
 ** Returns NULL if error occurs
-** NOTE: my_file_name is set here
+** NOTE: my_name is set here
 **
 ** Arguments:
-** file_name - the name of the script (must be located in ./scripts/ .rpt extension assumed),
+** abs_path - the absolute path of the script (e.g. /home/user/../script_name.rpt)
 ** func - function pointer (function where your client code is, NULL if none), 
 ** seconds - timeout (set <= 0 for no timeout)
 */
-result * robotTest(char * file_name, void * func, int seconds){
-	my_file_name = file_name;
+result * robotTest(char * abs_path, void * func, int seconds){
+	my_name = abs_path;
 
 	if(seconds > 0){
 		signal(SIGALRM, catch_alarm);
 		alarm(seconds);
 	}
 
-	char * file_str = prepareRobot(file_name);
-	if(file_str == NULL){
+	int prepared = prepareRobot(my_name);
+	if(prepared == -1){
 		fprintf(stderr, "Failed to prepare the robot: Is the robot running?\n");
-		free(file_str);
 		int closed = close(my_sock);
 		if(closed == -1){
 			perror("closed");
@@ -562,46 +616,29 @@ result * robotTest(char * file_name, void * func, int seconds){
 		return NULL;
 	}
 
-	char * actual;
+	result * res;
 	if(func == NULL){
-		actual = doThreaded((void *)&handleControl, &my_sock, ROBOT_JOIN, NULL);
+		res = doThreaded((void *)&handleControl, &my_sock, ROBOT_JOIN, NULL);
 	}
 	else{
-		actual = doThreaded((void *)&handleControl, &my_sock, func, NULL);
+		res = doThreaded((void *)&handleControl, &my_sock, func, NULL);
 	}
 
-	if(actual == NULL){
-		free(file_str);
-		int closed = close(my_sock);
-		if(closed == -1){
-			perror("closed");
-		}
-		return NULL;
-	}
-
-	result * res = malloc(sizeof(result));
-	if(res == NULL){
-		perror("malloc");
-		free(file_str);
-		int closed = close(my_sock);
-		if(closed == -1){
-			perror("closed");
-		}
-		return NULL;
-	}
 	int closed = close(my_sock);
 	if(closed == -1){
 		perror("closed");
 	}
-	res->actual_script = actual;
-	res->expected_script = file_str;
 	return res;
 }
 
 void ROBOT_JOIN(void){
-	int started = writeStart(my_sock, my_file_name);
+	int started = writeStart(my_sock, my_name);
 	if(started == -1){
 		puts("Failed to write start");
+		int closed = close(my_sock);
+		if(closed == -1){
+			perror("closed");
+		}
 		exit(EXIT_FAILURE);
 	}
 }
@@ -643,7 +680,7 @@ pthread_t * createThread(void * func, void * arg){
 ** func2 - the start routine of the second thread (client thread)
 ** arg2 - the argument of the start routine of the second thread
 */
-char * doThreaded(void * func1, void * arg1, void * func2, void * arg2){
+result * doThreaded(void * func1, void * arg1, void * func2, void * arg2){
 	pthread_t * communication_thread = createThread(func1, arg1);
 	if(communication_thread == NULL){
 		return NULL;
@@ -654,16 +691,16 @@ char * doThreaded(void * func1, void * arg1, void * func2, void * arg2){
 		return NULL;
 	}
 
-	char * communication_thread_val = malloc(sizeof(char));
+	result * communication_thread_val = malloc(sizeof(result));
 	if(communication_thread_val == NULL){
 		perror("malloc");
 		free(communication_thread);
 		free(client_thread);
 		return NULL;
 	}
-	char * tmp = communication_thread_val;
+	result * tmp = communication_thread_val;
 	pthread_join(*communication_thread, (void **)&communication_thread_val);
-	// no need to join on client_thread (could get blocked)
+	// don't join on client_thread (could get blocked)
 	free(communication_thread);
 	free(client_thread);
 	free(tmp);

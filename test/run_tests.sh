@@ -20,11 +20,11 @@ mkdir ./tmp
 
 # Get Robot jar file
 echo Downloading Robot...
-wget -O robot.zip https://oss.sonatype.org/content/repositories/releases/org/kaazing/robot.cli/0.0.0.3/robot.cli-0.0.0.3.zip &> /dev/null
+wget -O robot.zip https://oss.sonatype.org/content/repositories/releases/org/kaazing/robot.cli/0.0.0.6/robot.cli-0.0.0.6.zip &> /dev/null
 unzip robot.zip &> /dev/null
 rm robot.zip
-mv ./robot-0.0.0.3/robot.jar .
-rm -r robot-0.0.0.3
+mv ./robot-0.0.0.6/robot.jar .
+rm -r robot-0.0.0.6
 echo Robot Downloaded
 
 # Start Robot
