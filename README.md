@@ -1,7 +1,7 @@
-robot.c
-=======
+k3po.c
+======
 
-Robot C/C++ Test Framework (Google Test)
+K3PO Protocol Droid for C/C++ (Google Test)
 
 Quick Start Guide:
 
